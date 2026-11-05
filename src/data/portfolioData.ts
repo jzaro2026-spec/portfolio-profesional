@@ -207,9 +207,9 @@ export interface PortfolioContent {
 
 export const PORTFOLIO_IMAGES = {
   personalPortrait: '/assets/aistudio/IMG_20261103_125023_c7bec6bc.jpg',
-  heroLogistics: '/src/assets/images/hero_modern_logistics_1793784414801.jpg',
-  warehouseOperations: '/src/assets/images/industrial_warehouse_operations_1793784415871.jpg',
-  technologyWorkspace: '/src/assets/images/technology_automation_workspace_1793784416316.jpg',
+  heroLogistics: '/assets/images/hero_modern_logistics_1793784414801.jpg',
+  warehouseOperations: '/assets/images/industrial_warehouse_operations_1793784415871.jpg',
+  technologyWorkspace: '/assets/images/technology_automation_workspace_1793784416316.jpg',
 };
 
 export const portfolioData: Record<Language, PortfolioContent> = {
