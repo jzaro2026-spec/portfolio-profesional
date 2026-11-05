@@ -87,6 +87,20 @@ main > section:first-of-type .text-zinc-950 { color: #fff !important; }
 main > section:first-of-type .text-zinc-600 { color: rgba(255,255,255,.64) !important; }
 main > section:first-of-type .border-zinc-200\/90 { border-color: rgba(255,255,255,.18) !important; }
 main > section:first-of-type .bg-white { background: #fff !important; }
+main > section:first-of-type .bg-white,
+main > section:first-of-type .bg-\[\#FAFAFA\] {
+  color: var(--ink) !important;
+}
+main > section:first-of-type .bg-white p,
+main > section:first-of-type .bg-\[\#FAFAFA\] p {
+  color: #52616b !important;
+}
+main > section:first-of-type .bg-white .text-zinc-900,
+main > section:first-of-type .bg-white .text-zinc-950,
+main > section:first-of-type .bg-\[\#FAFAFA\] .text-zinc-900,
+main > section:first-of-type .bg-\[\#FAFAFA\] .text-zinc-950 {
+  color: var(--ink) !important;
+}
 main > section:first-of-type .border-zinc-200,
 main > section:first-of-type .border-zinc-200\/80 { border-color: rgba(255,255,255,.18) !important; }
 
