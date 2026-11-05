@@ -1,22 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 @import "tailwindcss";
 
 @layer base {
   :root {
-    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'Manrope', 'DM Sans', sans-serif;
     --font-serif: 'Cormorant Garamond', Georgia, serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-mono: 'DM Mono', monospace;
+    --ink: #101923;
+    --muted: #63707c;
+    --paper: #f5f7f8;
+    --line: #dce3e7;
+    --accent: #c9f06b;
   }
 
   body {
     font-family: var(--font-sans);
-    color: #18181b;
-    background-color: #fafafa;
+    color: var(--ink);
+    background-color: var(--paper);
     overflow-x: hidden;
+    font-size: 15px;
   }
 
   h1, h2, h3, h4 {
     text-wrap: balance;
+    font-family: var(--font-display);
+    letter-spacing: -0.045em;
   }
+
+  ::selection { background: var(--accent); color: var(--ink); }
+  html { scroll-behavior: smooth; }
+  button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 }
 
 .font-serif-editorial {
@@ -27,6 +42,90 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* Visual system: quieter borders, stronger hierarchy, and a tactile hover language. */
+main > section { position: relative; }
+main > section:nth-of-type(even) { background: #eef2f3 !important; }
+main > section:nth-of-type(odd) { background: var(--paper) !important; }
+
+header.sticky {
+  background: rgba(245, 247, 248, .82) !important;
+  border-color: rgba(16, 25, 35, .1) !important;
+}
+
+header.sticky a:first-child {
+  font-family: var(--font-display);
+  letter-spacing: -.04em;
+}
+
+main > section:first-of-type {
+  background: var(--ink) !important;
+  color: #fff;
+  border-color: rgba(255,255,255,.14) !important;
+}
+
+main > section:first-of-type::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .16;
+  background-image: linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to bottom, black, transparent 80%);
+}
+
+main > section:first-of-type > div.absolute > img { opacity: .22 !important; mix-blend-mode: screen; }
+main > section:first-of-type > div.absolute > .absolute {
+  background: linear-gradient(180deg, rgba(16,25,35,.82) 0%, rgba(16,25,35,.94) 100%) !important;
+}
+
+main > section:first-of-type h1 { color: #fff !important; }
+main > section:first-of-type p { color: rgba(255,255,255,.72); }
+main > section:first-of-type .text-zinc-900,
+main > section:first-of-type .text-zinc-950 { color: #fff !important; }
+main > section:first-of-type .text-zinc-600 { color: rgba(255,255,255,.64) !important; }
+main > section:first-of-type .border-zinc-200\/90 { border-color: rgba(255,255,255,.18) !important; }
+main > section:first-of-type .bg-white { background: #fff !important; }
+main > section:first-of-type .border-zinc-200,
+main > section:first-of-type .border-zinc-200\/80 { border-color: rgba(255,255,255,.18) !important; }
+
+main > section:not(:first-of-type) > div > div:first-child h2 { max-width: 760px; }
+
+main .rounded-xl {
+  border-radius: 20px;
+  border-color: var(--line);
+  box-shadow: 0 1px 0 rgba(16,25,35,.02), 0 12px 30px rgba(16,25,35,.035);
+}
+
+main .rounded-xl:hover {
+  border-color: #b9c6cd;
+}
+
+main button.bg-zinc-950,
+main a.bg-zinc-950 {
+  background: var(--accent) !important;
+  color: var(--ink) !important;
+  box-shadow: 0 8px 18px rgba(201,240,107,.16);
+}
+
+main button.bg-zinc-950:hover,
+main a.bg-zinc-950:hover { background: #ddfa91 !important; }
+
+main input, main textarea {
+  border-radius: 12px !important;
+  border-color: #cfd9de !important;
+  background: rgba(255,255,255,.72) !important;
+}
+
+main input:focus, main textarea:focus {
+  border-color: var(--ink) !important;
+  box-shadow: 0 0 0 4px rgba(201,240,107,.35);
+}
+
+footer { background: var(--ink) !important; color: #fff; border-color: rgba(255,255,255,.12) !important; }
+footer p, footer a { color: rgba(255,255,255,.65) !important; }
+footer p:first-child, footer a:hover { color: #fff !important; }
 
 @media (prefers-reduced-motion: reduce) {
   *,

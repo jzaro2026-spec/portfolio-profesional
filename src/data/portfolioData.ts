@@ -314,7 +314,7 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       subtitle:
         'Un recorrido profesional construido desde la base operativa hasta puestos de responsabilidad de silo y jefatura de almacén.',
       filters: {
-        all: 'Toda la trayectoria (9)',
+        all: 'Toda la trayectoria (10)',
         leadership: 'Responsabilidad y coordinación',
         logistics: 'Operativa logística',
         industrial: 'Industria, comercial y reparto',
@@ -446,6 +446,22 @@ export const portfolioData: Record<Language, PortfolioContent> = {
             'Acondicionamiento de pedidos, organización de la carga en vehículos industriales y estructuración previa de las rutas de reparto.',
           contributions:
             'Afianzamiento de la base logística en organización de muelles, optimización del espacio de carga y sincronización entre almacén y distribución.',
+        },
+        {
+          id: 'desinsa',
+          company: 'Desinsa',
+          role: 'Preparador / programador de CNC',
+          period: 'Septiembre de 1999 – Mayo de 2005',
+          category: 'industrial',
+          functions: [
+            'Preparación de maquinaria CNC.',
+            'Programación y ajuste de centros de control numérico.',
+            'Formación de personal.',
+          ],
+          responsibilities:
+            'Preparación y programación de centros de control numérico para la ejecución precisa de piezas y operaciones industriales, junto con el apoyo a la incorporación y formación práctica de nuevos trabajadores.',
+          contributions:
+            'Consolidación de conocimientos técnicos en CNC, mejora de la autonomía operativa del equipo y transmisión de procedimientos de trabajo, seguridad y calidad a personal de nueva incorporación.',
         },
         {
           id: 'sirometal',
@@ -795,7 +811,7 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       subtitle:
         'A professional trajectory built from foundational warehouse and industrial operations up to Warehouse Manager and Silo Supervisor roles.',
       filters: {
-        all: 'All Experience (9)',
+        all: 'All Experience (10)',
         leadership: 'Management & Coordination',
         logistics: 'Logistics Operations',
         industrial: 'Industry, Sales & Delivery',
@@ -927,6 +943,22 @@ export const portfolioData: Record<Language, PortfolioContent> = {
             'Order assembly, structured loading of commercial vehicles, and advance preparation of delivery routes.',
           contributions:
             'Built a solid operational foundation in loading dock organization, load space optimization, and coordination between warehouse and transport.',
+        },
+        {
+          id: 'desinsa',
+          company: 'Desinsa',
+          role: 'CNC Setup / Programmer (Preparador / programador de CNC)',
+          period: 'September 1999 – May 2005',
+          category: 'industrial',
+          functions: [
+            'CNC machine setup and preparation.',
+            'Programming and adjustment of numerical control machining centers.',
+            'Staff training and onboarding support.',
+          ],
+          responsibilities:
+            'Prepared and programmed numerical control machining centers for accurate industrial production, while supporting the onboarding and practical training of new team members.',
+          contributions:
+            'Strengthened technical CNC expertise, improved the team’s operational autonomy, and transferred work, safety, and quality procedures to newly incorporated staff.',
         },
         {
           id: 'sirometal',
