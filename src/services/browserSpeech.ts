@@ -324,8 +324,8 @@ export function speakWithMaleVoice(
   const utterance = new SpeechSynthesisUtterance(cleanText);
   utterance.voice = resolution.voice;
   utterance.lang = resolution.voice.lang || (lang === 'es' ? 'es-ES' : 'en-US');
-  utterance.rate = 0.98;
-  utterance.pitch = 0.94;
+  utterance.rate = 0.95;
+  utterance.pitch = 0.92;
 
   utterance.onstart = () => onStart?.();
   utterance.onend = () => onEnd?.();
