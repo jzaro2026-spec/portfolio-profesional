@@ -20,14 +20,12 @@ import {
   RespectLevel,
   processAssistantMessage,
   SESSION_ENDED_NOTICE,
+  createInitialConversationState,
 } from '../services/recruiterAssistant';
 import {
   MaleVoiceAvailability,
-  AudioRecorderController,
   RecognitionController,
-  createBrowserAudioRecorder,
   createBrowserSpeechRecognizer,
-  isBrowserAudioRecordingSupported,
   isSpeechRecognitionSupported,
   isSpeechSynthesisSupported,
   requestMicrophonePermission,
@@ -48,10 +46,6 @@ interface VirtualAssistantProps {
   lang: Language;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 const UI_COPY: Record<
@@ -75,7 +69,6 @@ const UI_COPY: Record<
     micNoSpeechNotice: string;
     micNetworkNotice: string;
     listeningLabel: string;
-    transcribingLabel: string;
     startMicLabel: string;
     stopMicLabel: string;
     speakMessageLabel: string;
@@ -83,8 +76,7 @@ const UI_COPY: Record<
     inputPlaceholder: string;
     inputEndedPlaceholder: string;
     sendLabel: string;
-    assistantRequestError: string;
-    assistantRequestingLabel: string;
+    assistantProcessingError: string;
     endSessionLabel: string;
     newSessionLabel: string;
     closeLabel: string;
@@ -118,12 +110,11 @@ const UI_COPY: Record<
     micBusyNotice:
       'El micrófono está siendo utilizado por otra aplicación. Libéralo o continúa utilizando el chat escrito.',
     micNoSpeechNotice:
-      'No se detectó voz suficiente durante la grabación. Pulsa el micrófono de nuevo para hablar o escribe tu consulta.',
+      'No se detectó voz durante el reconocimiento. Pulsa el micrófono de nuevo o escribe tu consulta.',
     micNetworkNotice:
       'El servicio gratuito de reconocimiento de voz del navegador no pudo conectar en este momento. Puedes continuar mediante el chat escrito.',
     listeningLabel:
       'Escuchando... habla con claridad y pulsa detener o haz una pausa para enviar.',
-    transcribingLabel: 'Transcribiendo el audio...',
     startMicLabel: 'Hablar por micrófono',
     stopMicLabel: 'Detener y enviar voz',
     speakMessageLabel: 'Escuchar con voz masculina',
@@ -132,9 +123,8 @@ const UI_COPY: Record<
     inputEndedPlaceholder:
       'Conversación finalizada. Inicia una nueva sesión para consultar.',
     sendLabel: 'Enviar',
-    assistantRequestError:
-      'No se pudo consultar al asistente. Comprueba la conexión e inténtalo de nuevo.',
-    assistantRequestingLabel: 'Consultando el perfil profesional...',
+    assistantProcessingError:
+      'No se pudo procesar la consulta. Inténtalo de nuevo.',
     endSessionLabel: 'Finalizar conversación',
     newSessionLabel: 'Iniciar nueva conversación',
     closeLabel: 'Cerrar asistente',
@@ -176,7 +166,6 @@ const UI_COPY: Record<
       'The browser’s free speech recognition service could not connect right now. Please continue using the written chat.',
     listeningLabel:
       'Listening... speak clearly and pause or press stop to send.',
-    transcribingLabel: 'Transcribing audio...',
     startMicLabel: 'Speak with microphone',
     stopMicLabel: 'Stop and send voice',
     speakMessageLabel: 'Listen with male voice',
@@ -185,9 +174,8 @@ const UI_COPY: Record<
     inputEndedPlaceholder:
       'Conversation ended. Start a new session to ask questions.',
     sendLabel: 'Send',
-    assistantRequestError:
-      'The assistant could not be reached. Check your connection and try again.',
-    assistantRequestingLabel: 'Checking the professional profile...',
+    assistantProcessingError:
+      'The question could not be processed. Please try again.',
     endSessionLabel: 'End conversation',
     newSessionLabel: 'Start new conversation',
     closeLabel: 'Close assistant',
@@ -217,12 +205,8 @@ export default function VirtualAssistant({
       respectLevel: 1,
     },
   ]);
-  const [conversationState, setConversationState] = useState<ConversationState>(
-    {
-      disrespectCount: 0,
-      ended: false,
-    }
-  );
+  const [conversationState, setConversationState] =
+    useState<ConversationState>(createInitialConversationState);
   const [inputValue, setInputValue] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -231,10 +215,8 @@ export default function VirtualAssistant({
   );
   const [isRequestingMic, setIsRequestingMic] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
   const [assistantError, setAssistantError] = useState<string | null>(null);
-  const [isRequestingAnswer, setIsRequestingAnswer] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState<{
     availability: MaleVoiceAvailability;
     voiceName: string | null;
@@ -247,10 +229,8 @@ export default function VirtualAssistant({
 
   const recognitionSupported = isSpeechRecognitionSupported();
   const recognizerRef = useRef<RecognitionController | null>(null);
-  const audioRecorderRef = useRef<AudioRecorderController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const userToggledAutoSpeakRef = useRef(false);
-  const requestInProgressRef = useRef(false);
 
   // Sync welcome message if conversation hasn't started yet and language changes
   useEffect(() => {
@@ -309,9 +289,6 @@ export default function VirtualAssistant({
       stopSpeaking();
       setSpeakingMessageId(null);
       recognizerRef.current?.abort();
-      audioRecorderRef.current?.abort();
-      audioRecorderRef.current = null;
-      setIsTranscribing(false);
       setIsListening(false);
       setIsRequestingMic(false);
       setInterimTranscript('');
@@ -322,8 +299,6 @@ export default function VirtualAssistant({
     return () => {
       stopSpeaking();
       recognizerRef.current?.abort();
-      audioRecorderRef.current?.abort();
-      audioRecorderRef.current = null;
     };
   }, []);
 
@@ -352,14 +327,12 @@ export default function VirtualAssistant({
     }
   };
 
-  const submitQuery = async (rawText: string, forceVoiceReply = false) => {
+  const submitQuery = (rawText: string, forceVoiceReply = false) => {
     const trimmed = rawText.trim();
-    if (!trimmed || conversationState.ended || requestInProgressRef.current) {
+    if (!trimmed || conversationState.ended) {
       return;
     }
 
-    requestInProgressRef.current = true;
-    setIsRequestingAnswer(true);
     setMicError(null);
     setAssistantError(null);
     setInterimTranscript('');
@@ -377,79 +350,19 @@ export default function VirtualAssistant({
       );
       setConversationState(nextState);
       setInputValue('');
-      setMessages((prev) => [...prev, userMsg]);
-
       const assistantMsgId = `assistant-${Date.now()}-${Math.random()
         .toString(36)
         .slice(2, 6)}`;
-
-      if (reply.respectLevel > 1 || reply.matchedTopic === 'session_ended') {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: assistantMsgId,
-            sender: 'assistant',
-            text: reply.text,
-            respectLevel: reply.respectLevel,
-            suggestEndSession: reply.suggestEndSession,
-          },
-        ]);
-        if (
-          (autoSpeak || forceVoiceReply) &&
-          voiceStatus.availability === 'male_found'
-        ) {
-          speakWithMaleVoice(
-            reply.text,
-            lang,
-            () => setSpeakingMessageId(assistantMsgId),
-            () => setSpeakingMessageId(null),
-            () => setSpeakingMessageId(null)
-          );
-        }
-        return;
-      }
-
-      const history = messages
-        .filter((message) => message.id !== 'welcome-0')
-        .slice(-12)
-        .map((message) => ({
-          role: message.sender === 'assistant' ? 'model' : 'user',
-          text: message.text,
-        }));
-
-      const response = await fetch('/api/assistant/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, history, lang }),
-      });
-
-      let payload: unknown;
-      try {
-        payload = await response.json();
-      } catch {
-        throw new Error(copy.assistantRequestError);
-      }
-
-      if (!response.ok) {
-        const errorMessage =
-          isRecord(payload) && typeof payload.error === 'string'
-            ? payload.error
-            : copy.assistantRequestError;
-        throw new Error(errorMessage);
-      }
-
-      if (!isRecord(payload) || typeof payload.reply !== 'string') {
-        throw new Error(copy.assistantRequestError);
-      }
-
-      const answer = payload.reply.trim();
-      if (!answer) {
-        throw new Error(copy.assistantRequestError);
-      }
-
       setMessages((prev) => [
         ...prev,
-        { id: assistantMsgId, sender: 'assistant', text: answer },
+        userMsg,
+        {
+          id: assistantMsgId,
+          sender: 'assistant',
+          text: reply.text,
+          respectLevel: reply.respectLevel,
+          suggestEndSession: reply.suggestEndSession,
+        },
       ]);
 
       if (
@@ -457,7 +370,7 @@ export default function VirtualAssistant({
         voiceStatus.availability === 'male_found'
       ) {
         speakWithMaleVoice(
-          answer,
+          reply.text,
           lang,
           () => setSpeakingMessageId(assistantMsgId),
           () => setSpeakingMessageId(null),
@@ -466,105 +379,14 @@ export default function VirtualAssistant({
       }
     } catch (error) {
       setInputValue(trimmed);
-      setAssistantError(
-        error instanceof Error ? error.message : copy.assistantRequestError
-      );
-    } finally {
-      requestInProgressRef.current = false;
-      setIsRequestingAnswer(false);
+      setAssistantError(copy.assistantProcessingError);
+      console.error('Failed to process assistant message locally.', error);
     }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void submitQuery(inputValue);
-  };
-
-  const blobToBase64 = (blob: Blob): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result;
-        resolve(
-          typeof result === 'string' ? result.split(',')[1] || '' : ''
-        );
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
-    });
-
-  const startAudioRecorderFallback = async () => {
-    const recorder = await createBrowserAudioRecorder((errorCode) => {
-      setIsListening(false);
-      setMicError(mapRecognitionError(errorCode));
-    });
-    if (!recorder) return;
-
-    audioRecorderRef.current = recorder;
-    setIsListening(true);
-    recorder.start();
-  };
-
-  const stopAudioRecorderFallback = async () => {
-    const recorder = audioRecorderRef.current;
-    if (!recorder) return;
-    audioRecorderRef.current = null;
-    setIsListening(false);
-    setIsTranscribing(true);
-
-    try {
-      const blob = await recorder.stop();
-      if (blob.size < 1000) {
-        setMicError(copy.micNoSpeechNotice);
-        return;
-      }
-      const data = await blobToBase64(blob);
-      if (!data) {
-        setMicError(copy.micNoSpeechNotice);
-        return;
-      }
-
-      const response = await fetch('/api/assistant/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'transcribe',
-          audio: { mimeType: blob.type || 'audio/webm', data },
-          lang,
-        }),
-      });
-
-      let payload: unknown;
-      try {
-        payload = await response.json();
-      } catch {
-        throw new Error(copy.assistantRequestError);
-      }
-      if (!response.ok) {
-        throw new Error(
-          isRecord(payload) && typeof payload.error === 'string'
-            ? payload.error
-            : copy.assistantRequestError
-        );
-      }
-      if (!isRecord(payload) || typeof payload.transcript !== 'string') {
-        throw new Error(copy.assistantRequestError);
-      }
-
-      const transcript = payload.transcript.trim();
-      if (!transcript) {
-        setMicError(copy.micNoSpeechNotice);
-        return;
-      }
-      setInterimTranscript('');
-      await submitQuery(transcript, true);
-    } catch (error) {
-      setMicError(
-        error instanceof Error ? error.message : copy.assistantRequestError
-      );
-    } finally {
-      setIsTranscribing(false);
-    }
+    submitQuery(inputValue);
   };
 
   const mapRecognitionError = (code: string): string => {
@@ -584,15 +406,16 @@ export default function VirtualAssistant({
   };
 
   const handleToggleMic = async () => {
-    if (conversationState.ended || isRequestingMic || isTranscribing) return;
+    if (conversationState.ended || isRequestingMic) return;
     setMicError(null);
 
+    if (!recognitionSupported) {
+      setMicError(copy.recognitionUnsupportedNotice);
+      return;
+    }
+
     if (isListening) {
-      if (audioRecorderRef.current) {
-        await stopAudioRecorderFallback();
-      } else {
-        recognizerRef.current?.stop();
-      }
+      recognizerRef.current?.stop();
       return;
     }
 
@@ -617,15 +440,6 @@ export default function VirtualAssistant({
       return;
     }
 
-    if (!recognitionSupported) {
-      if (!isBrowserAudioRecordingSupported()) {
-        setMicError(copy.recognitionUnsupportedNotice);
-        return;
-      }
-      await startAudioRecorderFallback();
-      return;
-    }
-
     const controller = createBrowserSpeechRecognizer(lang, {
       onInterim: (transcript) => {
         setInterimTranscript(transcript);
@@ -638,11 +452,7 @@ export default function VirtualAssistant({
       onError: (errorCode) => {
         setIsListening(false);
         setInterimTranscript('');
-        if (errorCode === 'network' && isBrowserAudioRecordingSupported()) {
-          void startAudioRecorderFallback();
-        } else {
-          setMicError(mapRecognitionError(errorCode));
-        }
+        setMicError(mapRecognitionError(errorCode));
       },
       onEnd: () => {
         setIsListening(false);
@@ -670,9 +480,6 @@ export default function VirtualAssistant({
     stopSpeaking();
     setSpeakingMessageId(null);
     recognizerRef.current?.abort();
-    audioRecorderRef.current?.abort();
-    audioRecorderRef.current = null;
-    setIsTranscribing(false);
     setIsListening(false);
     setIsRequestingMic(false);
     setInterimTranscript('');
@@ -692,15 +499,12 @@ export default function VirtualAssistant({
     stopSpeaking();
     setSpeakingMessageId(null);
     recognizerRef.current?.abort();
-    audioRecorderRef.current?.abort();
-    audioRecorderRef.current = null;
-    setIsTranscribing(false);
     setIsListening(false);
     setIsRequestingMic(false);
     setInterimTranscript('');
     setMicError(null);
     setInputValue('');
-    setConversationState({ disrespectCount: 0, ended: false });
+    setConversationState(createInitialConversationState());
     setMessages([
       {
         id: 'welcome-0',
@@ -793,7 +597,6 @@ export default function VirtualAssistant({
                     <button
                       type="button"
                       onClick={handleResetSession}
-                      disabled={isRequestingAnswer}
                       title={copy.newSessionLabel}
                       aria-label={copy.newSessionLabel}
                       className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:text-zinc-950 hover:border-zinc-300 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-zinc-950"
@@ -864,7 +667,7 @@ export default function VirtualAssistant({
                     {copy.synthesisUnsupportedNotice}
                   </p>
                 )}
-                {!recognitionSupported && !isBrowserAudioRecordingSupported() && (
+                {!recognitionSupported && (
                   <p className="text-[11px] text-zinc-600 leading-relaxed bg-white border border-zinc-200/80 rounded-lg px-3 py-2">
                     {copy.recognitionUnsupportedNotice}
                   </p>
@@ -962,7 +765,7 @@ export default function VirtualAssistant({
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => void submitQuery(suggestion)}
+                          onClick={() => submitQuery(suggestion)}
                           className="group w-full flex items-center justify-between gap-3 text-left px-4 py-3 rounded-xl border border-zinc-200/90 bg-white hover:border-zinc-900 hover:bg-white text-[13px] font-medium text-zinc-800 hover:text-zinc-950 transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-zinc-950"
                         >
                           <span className="leading-snug">{suggestion}</span>
@@ -987,14 +790,6 @@ export default function VirtualAssistant({
                 )}
 
                 <div ref={messagesEndRef} />
-                {isRequestingAnswer && (
-                  <p
-                    role="status"
-                    className="text-xs text-zinc-500"
-                  >
-                    {copy.assistantRequestingLabel}
-                  </p>
-                )}
               </div>
 
               {/* Input Footer */}
@@ -1038,12 +833,6 @@ export default function VirtualAssistant({
                   </div>
                 )}
 
-                {isTranscribing && (
-                  <p className="text-[11px] font-medium text-zinc-600">
-                    {copy.transcribingLabel}
-                  </p>
-                )}
-
                 <form
                   onSubmit={handleFormSubmit}
                   className="flex items-center gap-2"
@@ -1056,12 +845,7 @@ export default function VirtualAssistant({
                         : inputValue
                     }
                     onChange={(e) => setInputValue(e.target.value)}
-                    disabled={
-                      conversationState.ended ||
-                      isListening ||
-                      isTranscribing ||
-                      isRequestingAnswer
-                    }
+                    disabled={conversationState.ended || isListening}
                     placeholder={
                       conversationState.ended
                         ? copy.inputEndedPlaceholder
@@ -1076,18 +860,17 @@ export default function VirtualAssistant({
                     disabled={
                       conversationState.ended ||
                       isRequestingMic ||
-                      isTranscribing ||
-                      isRequestingAnswer
+                      !recognitionSupported
                     }
                     title={
-                      !recognitionSupported && !isBrowserAudioRecordingSupported()
+                      !recognitionSupported
                         ? copy.recognitionUnsupportedNotice
                         : isListening
                         ? copy.stopMicLabel
                         : copy.startMicLabel
                     }
                     aria-label={
-                      !recognitionSupported && !isBrowserAudioRecordingSupported()
+                      !recognitionSupported
                         ? copy.recognitionUnsupportedNotice
                         : isListening
                         ? copy.stopMicLabel
@@ -1096,11 +879,8 @@ export default function VirtualAssistant({
                     className={`inline-flex items-center justify-center w-11 h-11 rounded-lg border transition-colors shrink-0 focus-visible:outline-2 focus-visible:outline-zinc-950 ${
                       conversationState.ended ||
                       isRequestingMic ||
-                      isTranscribing ||
-                      isRequestingAnswer
+                      !recognitionSupported
                         ? 'border-zinc-200 bg-zinc-100 text-zinc-400 cursor-not-allowed'
-                        : !recognitionSupported && !isBrowserAudioRecordingSupported()
-                        ? 'border-zinc-200 bg-[#FAFAFA] text-zinc-400 hover:text-zinc-700 hover:border-zinc-300 cursor-pointer'
                         : isListening
                         ? 'border-zinc-950 bg-zinc-950 text-white cursor-pointer'
                         : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 cursor-pointer'
@@ -1117,7 +897,6 @@ export default function VirtualAssistant({
                     type="submit"
                     disabled={
                       conversationState.ended ||
-                      isRequestingAnswer ||
                       !inputValue.trim()
                     }
                     aria-label={copy.sendLabel}

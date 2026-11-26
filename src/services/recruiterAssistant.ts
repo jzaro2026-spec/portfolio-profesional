@@ -15,6 +15,10 @@ export interface ConversationState {
   ended: boolean;
 }
 
+export function createInitialConversationState(): ConversationState {
+  return { disrespectCount: 0, ended: false };
+}
+
 export const LEVEL_2_RESPONSE: Record<Language, string> = {
   es: `Entiendo que quieras interactuar con el asistente, pero este espacio está destinado a conocer la trayectoria profesional de José María.
 
@@ -393,7 +397,20 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
   }
 
   // 7. Specific company queries
-  if (hasAny(text, ['fac', 'segundo encargado', 'actual', 'actualidad', 'ulises', 'rps'])) {
+  if (
+    hasAny(text, [
+      'fac',
+      'fac seguridad',
+      'segundo encargado',
+      'actual',
+      'actualidad',
+      'puesto actual',
+      'current role',
+      'currently',
+      'ulises',
+      'rps',
+    ])
+  ) {
     const fac = data.experience.items[0];
     return {
       topic: 'fac_seguridad',
@@ -404,7 +421,19 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
     };
   }
 
-  if (hasAny(text, ['grupo uno', 'ctc', 'jefe de almacen', 'puente grua', 'grua', 'overhead crane'])) {
+  if (
+    hasAny(text, [
+      'grupo uno',
+      'jefe de almacen',
+      'puente grua',
+      'grua',
+      'overhead crane',
+      'warehouse manager',
+      'group one',
+    ]) ||
+    (hasAny(text, ['ctc']) &&
+      !hasAny(text, ['sanofi', 'externalizacion', 'externalization']))
+  ) {
     const g1 = data.experience.items[1];
     return {
       topic: 'grupo_uno_ctc',
@@ -415,7 +444,17 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
     };
   }
 
-  if (hasAny(text, ['sanofi', 'farmaceutic', 'carretillero'])) {
+  if (
+    hasAny(text, [
+      'sanofi',
+      'farmaceutic',
+      'carretillero',
+      'ctc externalizacion',
+      'ctc externalization',
+      'externalizacion',
+      'externalization',
+    ])
+  ) {
     const sanofi = data.experience.items[2];
     return {
       topic: 'sanofi_forklift',
@@ -471,6 +510,34 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
     };
   }
 
+  if (
+    hasAny(text, [
+      'formacion de personal',
+      'formacion de trabajadores',
+      'formacion de empleados',
+      'formar trabajadores',
+      'formar a trabajadores',
+      'forma a los trabajadores',
+      'capacitar',
+      'capacita',
+      'staff training',
+      'training staff',
+      'train new employees',
+      'train new staff',
+      'employee training',
+      'onboarding staff',
+      'onboard new employees',
+    ])
+  ) {
+    return {
+      topic: 'staff_training',
+      text:
+        lang === 'es'
+          ? 'Ha colaborado en la formación práctica de personal en CTC Externalización — Sanofi y apoya la formación de trabajadores en FAC Seguridad. Esta experiencia se complementa con la coordinación de equipos, la distribución de tareas y la organización diaria del almacén.'
+          : 'He has supported practical staff training at CTC Externalización — Sanofi and supports worker training at FAC Seguridad. This experience complements his work coordinating teams, allocating tasks, and organizing daily warehouse operations.',
+    };
+  }
+
   // 9. Education & Certifications
   if (
     hasAny(text, [
@@ -490,6 +557,8 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
       'certificate',
       'license',
       'studies',
+      'academic background',
+      'vocational training',
     ])
   ) {
     return {
@@ -521,6 +590,10 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
       'forklift',
       'erp',
       'wms',
+      'ulises',
+      'rps',
+      'crane',
+      'cnc',
     ])
   ) {
     return {
@@ -529,6 +602,37 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
         lang === 'es'
           ? 'En el ámbito de herramientas de gestión y maquinaria ha trabajado de forma práctica con los sistemas SAP, Ulises y RPS, sistemas de picking por voz, carretillas elevadoras (incluida carretilla frontal), puente grúa y centros de control numérico (CNC). El uso de herramientas informáticas corresponde a su aplicación operativa en almacén.'
           : 'Across management systems and industrial equipment, he has hands-on experience with SAP, Ulises, and RPS, voice-picking systems, forklifts (including counterbalance frontal forklifts), overhead cranes, and CNC machining centers, applied directly in daily warehouse and industrial operations.',
+    };
+  }
+
+  if (
+    hasAny(text, [
+      'gestion de almacen',
+      'gestion de almacenes',
+      'gestion de inventario',
+      'gestion de inventarios',
+      'control de stock',
+      'gestionar almacenes',
+      'almacen',
+      'almacenes',
+      'almacenamiento',
+      'logistica',
+      'logistics',
+      'warehouse',
+      'warehousing',
+      'warehouse management',
+      'warehouse operations',
+      'inventory management',
+      'stock control',
+      'supply chain',
+    ])
+  ) {
+    return {
+      topic: 'warehouse_management',
+      text:
+        lang === 'es'
+          ? 'José María cuenta con experiencia práctica en logística y gestión de almacenes: preparación y revisión de pedidos, recepción y ubicación de materiales, reposición de máquinas, inventarios, control de stock y carga de mercancías. También ha participado en la organización y limpieza del almacén, el control de calidad y seguridad, la resolución de incidencias y la coordinación operativa en FAC Seguridad, Grupo Uno CTC y CTC Externalización — Sanofi.'
+          : 'José María has practical experience in logistics and warehouse operations, including order preparation and checking, receiving and putting away materials, machine replenishment, inventory counts, stock control, and loading goods. His experience also includes workplace organization and cleanliness, quality and safety checks, incident resolution, and operational coordination at FAC Seguridad, Grupo Uno CTC, and CTC Externalización — Sanofi.',
     };
   }
 
@@ -553,6 +657,13 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
       'coordinator',
       'lead',
       'onboarding',
+      'calidad',
+      'quality',
+      'organizacion',
+      'organization',
+      'organisation',
+      'procedimientos',
+      'procedures',
     ])
   ) {
     return {
@@ -588,6 +699,15 @@ function buildProfessionalAnswer(rawInput: string, lang: Language): {
       'who is',
       'companies',
       'roles',
+      'logistica',
+      'logistics',
+      'almacen',
+      'almacenes',
+      'warehouse',
+      'warehousing',
+      'supply chain',
+      'inventario',
+      'inventory',
     ])
   ) {
     return {
@@ -739,6 +859,6 @@ export function processAssistantMessage(
       shouldEndSessionNow: false,
       matchedTopic: answer.topic,
     },
-    nextState: state,
+    nextState: createInitialConversationState(),
   };
 }
