@@ -78,6 +78,23 @@ test('assistant endpoint rejects oversized request bodies before provider use', 
   assert.equal(state.statusCode, 413);
 });
 
+test('assistant endpoint returns a generic error when body parsing throws', async () => {
+  const request = createRequest('POST', { message: 'Hello' });
+  Object.defineProperty(request, 'body', {
+    configurable: true,
+    get() {
+      throw new SyntaxError('sensitive parser details');
+    },
+  });
+  const { response, state } = createResponse();
+
+  await handler(request, response);
+
+  assert.equal(state.statusCode, 400);
+  assert.deepEqual(state.body, { error: 'Invalid request body.' });
+  assert.doesNotMatch(JSON.stringify(state.body), /sensitive parser details/);
+});
+
 test('assistant endpoint returns a setup error when Gemini is not configured', async () => {
   const previousKey = process.env.GEMINI_API_KEY;
   delete process.env.GEMINI_API_KEY;

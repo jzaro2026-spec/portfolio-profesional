@@ -119,11 +119,10 @@ function setRetryAfter(res: VercelResponse, resetAt: number): void {
   res.setHeader('Retry-After', String(seconds));
 }
 
-function contentLengthExceedsLimit(req: VercelRequest): boolean {
+function contentLengthExceedsLimit(req: VercelRequest, body: unknown): boolean {
   const header = req.headers['content-length'];
   const value = Array.isArray(header) ? header[0] : header;
-  const isAudioRequest =
-    isRecord(req.body) && req.body.action === 'transcribe';
+  const isAudioRequest = isRecord(body) && body.action === 'transcribe';
   const limit = isAudioRequest ? MAX_REQUEST_BYTES : MAX_TEXT_REQUEST_BYTES;
   return (
     value !== undefined &&
@@ -154,15 +153,22 @@ export default async function handler(
       .json({ error: 'Content-Type must be application/json.' });
   }
 
-  if (contentLengthExceedsLimit(req)) {
-    return res.status(413).json({ error: 'The request is too large.' });
-  }
-
-  if (!isRecord(req.body)) {
+  let requestBody: unknown;
+  try {
+    requestBody = req.body;
+  } catch {
     return res.status(400).json({ error: 'Invalid request body.' });
   }
 
-  const body = req.body;
+  if (contentLengthExceedsLimit(req, requestBody)) {
+    return res.status(413).json({ error: 'The request is too large.' });
+  }
+
+  if (!isRecord(requestBody)) {
+    return res.status(400).json({ error: 'Invalid request body.' });
+  }
+
+  const body = requestBody;
   const lang: AssistantLanguage = body.lang === 'en' ? 'en' : 'es';
   const message = typeof body.message === 'string' ? body.message.trim() : '';
 
