@@ -123,6 +123,39 @@ test('assistant endpoint fails closed when shared rate limiting is not configure
   assert.match(String((state.body as { error?: unknown })?.error), /usage protection/i);
 });
 
+test('assistant endpoint handles a malformed Upstash URL without crashing', async () => {
+  const previous = {
+    apiKey: process.env.GEMINI_API_KEY,
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  };
+  process.env.GEMINI_API_KEY = 'test-only-not-a-real-key';
+  process.env.UPSTASH_REDIS_REST_URL = 'not-a-valid-url';
+  process.env.UPSTASH_REDIS_REST_TOKEN = 'test-only-not-a-real-token';
+  const { response, state } = createResponse();
+
+  try {
+    await handler(
+      createRequest('POST', { lang: 'en', message: 'Hello' }),
+      response
+    );
+  } finally {
+    if (previous.apiKey === undefined) delete process.env.GEMINI_API_KEY;
+    else process.env.GEMINI_API_KEY = previous.apiKey;
+    if (previous.url === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
+    else process.env.UPSTASH_REDIS_REST_URL = previous.url;
+    if (previous.token === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
+    else process.env.UPSTASH_REDIS_REST_TOKEN = previous.token;
+  }
+
+  assert.equal(state.statusCode, 503);
+  assert.match(
+    String((state.body as { error?: unknown })?.error),
+    /usage protection is not configured correctly/i
+  );
+  assert.doesNotMatch(JSON.stringify(state.body), /not-a-valid-url/);
+});
+
 test('assistant endpoint does not trust spoofable IP headers for rate limiting', async () => {
   const previous = {
     apiKey: process.env.GEMINI_API_KEY,

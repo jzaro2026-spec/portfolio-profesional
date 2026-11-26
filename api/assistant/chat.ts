@@ -85,9 +85,22 @@ function getRateLimiters() {
   const token = env.UPSTASH_REDIS_REST_TOKEN?.trim();
   if (!url || !token) return null;
 
-  if (!rateLimiters) {
-    rateLimiters = createRateLimiters(new Redis({ url, token }));
+  try {
+    if (new URL(url).protocol !== 'https:') {
+      throw new TypeError('Upstash REST URL must use HTTPS.');
+    }
+
+    if (!rateLimiters) {
+      rateLimiters = createRateLimiters(new Redis({ url, token }));
+    }
+  } catch (error) {
+    console.error(
+      'Assistant rate limiter initialization failed.',
+      error instanceof Error ? error.name : 'UnknownError'
+    );
+    return null;
   }
+
   return rateLimiters;
 }
 
@@ -183,8 +196,8 @@ export default async function handler(
     return res.status(503).json({
       error:
         lang === 'es'
-          ? 'El asistente no está disponible porque falta configurar la protección de uso.'
-          : 'The assistant is unavailable because its usage protection is not configured.',
+          ? 'El asistente no está disponible porque la protección de uso no está configurada correctamente.'
+          : 'The assistant is unavailable because its usage protection is not configured correctly.',
     });
   }
 
