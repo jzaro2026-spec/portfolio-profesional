@@ -1,9 +1,19 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { IncomingMessage } from 'node:http';
 import { Socket } from 'node:net';
+import path from 'node:path';
 import test from 'node:test';
+import { build } from 'esbuild';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import handler from '../api/assistant/chat.ts';
 import { buildAssistantSystemInstruction } from '../src/data/assistantKnowledge.ts';
+
+const projectRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..'
+);
 
 type HandlerRequest = Parameters<typeof handler>[0];
 type HandlerResponse = Parameters<typeof handler>[1];
@@ -59,6 +69,51 @@ test('assistant context includes verified Spanish and English profile data', () 
   assert.match(english, /November 20, 2026/);
   assert.match(english, /josemarotolazaro@hotmail\.com/);
 });
+
+test(
+  'assistant API dependency graph loads as native Node ESM after TypeScript transpilation',
+  async () => {
+    const outputDir = await mkdtemp(path.join(projectRoot, '.assistant-esm-'));
+
+    try {
+      await build({
+        absWorkingDir: projectRoot,
+        entryPoints: [
+          'api/assistant/chat.ts',
+          'src/data/assistantKnowledge.ts',
+          'src/data/portfolioData.ts',
+        ],
+        bundle: false,
+        format: 'esm',
+        outbase: projectRoot,
+        outdir: outputDir,
+        platform: 'node',
+        target: 'node24',
+      });
+
+      const entryUrl = pathToFileURL(
+        path.join(outputDir, 'api', 'assistant', 'chat.js')
+      ).href;
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          `await import(${JSON.stringify(entryUrl)})`,
+        ],
+        { cwd: projectRoot, encoding: 'utf8' }
+      );
+
+      assert.equal(
+        result.status,
+        0,
+        result.stderr || result.error?.message || 'Native ESM import failed.'
+      );
+    } finally {
+      await rm(outputDir, { recursive: true, force: true });
+    }
+  }
+);
 
 test('assistant endpoint rejects methods other than POST', async () => {
   const { response, state } = createResponse();

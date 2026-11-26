@@ -2,7 +2,7 @@ import {
   OFFICIAL_CONTACT_EMAIL,
   portfolioData,
   type Language,
-} from './portfolioData';
+} from './portfolioData.js';
 
 export type AssistantLanguage = Language;
 

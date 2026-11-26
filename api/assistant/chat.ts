@@ -8,7 +8,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
   buildAssistantSystemInstruction,
   type AssistantLanguage,
-} from '../../src/data/assistantKnowledge.ts';
+} from '../../src/data/assistantKnowledge.js';
 
 interface VercelRequest extends IncomingMessage {
   body?: unknown;
