@@ -1,5 +1,7 @@
 export type Language = 'es' | 'en';
 
+export const OFFICIAL_CONTACT_EMAIL = 'josemarotolazaro@hotmail.com';
+
 export type ExperienceCategory = 'all' | 'leadership' | 'logistics' | 'industrial';
 
 export interface ExperienceItem {
@@ -53,6 +55,7 @@ export interface PortfolioContent {
     ctaPrimary: string;
     ctaSecondaryAvailable: string;
     ctaSecondaryPending: string;
+    ctaAssistant: string;
     attachPdfLabel: string;
     removePdfLabel: string;
     pdfPendingNotice: string;
@@ -118,6 +121,23 @@ export interface PortfolioContent {
     subtitle: string;
     featuredHeading: string;
     items: EducationItem[];
+    certificateHighlight: {
+      sectionLabel: string;
+      badgeLabel: string;
+      title: string;
+      institution: string;
+      recipientLabel: string;
+      completionDateLabel: string;
+      completionDateValue: string;
+      durationLabel: string;
+      durationValue: string;
+      description: string;
+      zoomButton: string;
+      closeZoomButton: string;
+      attachScanButton: string;
+      removeScanButton: string;
+      scanModalNote: string;
+    };
     languagesTitle: string;
     languagesList: {
       language: string;
@@ -198,15 +218,52 @@ export interface PortfolioContent {
       validationReadyConfiguredText: string;
     };
   };
+  assistant: {
+    launcherLabel: string;
+    launcherSublabel: string;
+    title: string;
+    subtitle: string;
+    newConversationBtn: string;
+    closeBtn: string;
+    modeTextTab: string;
+    modeVoiceTab: string;
+    greeting: string;
+    suggestedQuestionsLabel: string;
+    suggestedQuestions: string[];
+    inputPlaceholder: string;
+    sendBtn: string;
+    thinkingLabel: string;
+    voiceControls: {
+      voiceBadgeLabel: string;
+      startMicBtn: string;
+      stopAndSendBtn: string;
+      cancelMicBtn: string;
+      stopAudioBtn: string;
+      replayAudioBtn: string;
+      autoSpeakToggle: string;
+      listeningState: string;
+      transcribingState: string;
+      thinkingState: string;
+      speakingState: string;
+      idleVoiceHint: string;
+      micPermissionHint: string;
+      micDeniedError: string;
+      micUnsupportedError: string;
+      emptySpeechError: string;
+      ttsErrorPrefix: string;
+    };
+    privacyFooter: string;
+  };
   footer: {
     rights: string;
     privacyNotice: string;
+    contactLabel: string;
     backToTop: string;
   };
 }
 
 export const PORTFOLIO_IMAGES = {
-  personalPortrait: '/assets/aistudio/IMG_20261103_125023_c7bec6bc.jpg',
+  personalPortrait: '/assets/images/jose-maria-maroto.png',
   heroLogistics: '/assets/images/hero_modern_logistics_1793784414801.jpg',
   warehouseOperations: '/assets/images/industrial_warehouse_operations_1793784415871.jpg',
   technologyWorkspace: '/assets/images/technology_automation_workspace_1793784416316.jpg',
@@ -238,10 +295,11 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       ctaPrimary: 'Conocer mi trayectoria',
       ctaSecondaryAvailable: 'Descargar currículum PDF',
       ctaSecondaryPending: 'Descargar currículum (PDF pendiente)',
+      ctaAssistant: 'Entrevistar al asistente virtual',
       attachPdfLabel: 'Vincular PDF original del CV',
-      removePdfLabel: 'Desvincular PDF',
+      removePdfLabel: 'Restaurar CV original',
       pdfPendingNotice:
-        'Marcador activo: adjunta el archivo PDF original de tu currículum para habilitar su descarga directa.',
+        'El CV original está disponible para descarga.',
       scrollIndicator: 'Explorar trayectoria profesional',
       photoFrameTitle: 'Fotografía personal',
       photoCaption: 'José María Maroto · Logística y gestión operativa',
@@ -256,9 +314,9 @@ export const portfolioData: Record<Language, PortfolioContent> = {
           detail: 'Recorrido continuado en operativa logística, almacén e industria',
         },
         {
-          label: 'Responsabilidad operativa',
-          value: '9 Etapas Profesionales',
-          detail: 'Desde distribución y entorno CNC hasta jefatura de almacén y responsable de silo',
+          label: 'Responsabilidad actual',
+          value: 'Segundo encargado de almacén',
+          detail: 'FAC Seguridad · Coordinación operativa de almacén',
         },
         {
           label: 'Sistemas de gestión',
@@ -266,9 +324,9 @@ export const portfolioData: Record<Language, PortfolioContent> = {
           detail: 'Control de stock, inventarios, trazabilidad y preparación de pedidos',
         },
         {
-          label: 'Evolución tecnológica',
-          value: '120 Horas en IA',
-          detail: 'Formación reciente en la Cámara de Comercio de Toledo',
+          label: 'Formación en IA',
+          value: '120 h + Santander IA',
+          detail: 'Cámara de Comercio de Toledo y Santander Open Academy',
         },
       ],
     },
@@ -312,7 +370,7 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       sectionLabel: 'Experiencia profesional',
       title: 'Trayectoria consolidada en operaciones, almacén y coordinación.',
       subtitle:
-        'Un recorrido profesional construido desde la base operativa hasta puestos de responsabilidad de silo y jefatura de almacén.',
+        'Un recorrido profesional construido desde la base operativa hasta puestos de coordinación y jefatura de almacén.',
       filters: {
         all: 'Toda la trayectoria (10)',
         leadership: 'Responsabilidad y coordinación',
@@ -330,22 +388,22 @@ export const portfolioData: Record<Language, PortfolioContent> = {
         {
           id: 'fac-seguridad',
           company: 'FAC Seguridad',
-          role: 'Responsable de silo',
+          role: 'Segundo encargado de almacén',
           period: 'Agosto de 2019 – Actualidad',
           category: 'leadership',
           functions: [
+            'Apoyo en la coordinación operativa del almacén.',
             'Preparación y revisión de pedidos.',
             'Reposición de máquinas.',
             'Carga de mercancías y palés mediante carretilla.',
-            'Inventarios.',
-            'Control de stock.',
+            'Inventarios y control de stock.',
             'Manejo de sistemas Ulises y RPS.',
             'Apoyo a la formación de personal.',
           ],
           responsibilities:
-            'Supervisión integral del funcionamiento del silo, garantizando la exactitud del stock, el flujo continuo de reposición y la correcta verificación de cada pedido antes de su expedición.',
+            'Desempeño como Segundo encargado de almacén: apoyo directo en la coordinación operativa diaria del almacén, control y exactitud del stock, y verificación rigurosa de los pedidos antes de su expedición.',
           contributions:
-            'Consolidación del trabajo con los sistemas de gestión Ulises y RPS para el control de inventario, además de facilitar la integración práctica de nuevas incorporaciones en la operativa diaria.',
+            'Consolidación de la coordinación operativa del equipo y gestión precisa con los sistemas Ulises y RPS, facilitando además la formación práctica de nuevas incorporaciones.',
         },
         {
           id: 'grupo-uno-ctc',
@@ -600,6 +658,25 @@ export const portfolioData: Record<Language, PortfolioContent> = {
           tagLabel: 'Acreditación técnica',
         },
       ],
+      certificateHighlight: {
+        sectionLabel: 'Certificado acreditado',
+        badgeLabel: 'Santander Open Academy · 5 módulos',
+        title: 'Liderar en la era de la IA: cómo están cambiando el trabajo y las organizaciones',
+        institution: 'Santander Open Academy',
+        recipientLabel: 'Acreditado a',
+        completionDateLabel: 'Fecha de finalización',
+        completionDateValue: '20 de noviembre de 2026',
+        durationLabel: 'Estructura',
+        durationValue: '5 módulos',
+        description:
+          'Certificación centrada en comprender cómo la Inteligencia Artificial está transformando los entornos de trabajo, la coordinación de equipos y la evolución de las organizaciones.',
+        zoomButton: 'Ampliar certificado',
+        closeZoomButton: 'Cerrar vista ampliada',
+        attachScanButton: 'Adjuntar imagen del certificado',
+        removeScanButton: 'Restaurar vista institucional',
+        scanModalNote:
+          'Vista detallada del certificado oficial de Santander Open Academy.',
+      },
       languagesTitle: 'Idiomas',
       languagesList: [
         {
@@ -617,12 +694,12 @@ export const portfolioData: Record<Language, PortfolioContent> = {
     resumeBanner: {
       title: 'Documento curricular en formato PDF',
       description:
-        'Puedes descargar el currículum en PDF si el archivo original ha sido vinculado, o cargarlo directamente desde tu dispositivo para habilitar la descarga.',
+        'Descarga el currículum original en PDF.',
       downloadButton: 'Descargar currículum PDF',
-      uploadButton: 'Vincular PDF original',
-      statusReady: 'Archivo PDF original verificado y listo para descarga.',
+      uploadButton: '',
+      statusReady: 'CV original disponible para descarga.',
       statusPending:
-        'Estado actual: [PDF original pendiente de adjuntar]. No se generan enlaces ni documentos ficticios.',
+        'El CV original no está disponible en este momento.',
     },
     contact: {
       sectionIndex: '05',
@@ -631,10 +708,10 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       subtitle:
         'Si buscas un profesional con experiencia, capacidad de organización y ganas de seguir creciendo, estaré encantado de conocer nuevas oportunidades.',
       emailLabel: 'Correo electrónico profesional',
-      emailPlaceholderMarker: '[CORREO PROFESIONAL PENDIENTE]',
+      emailPlaceholderMarker: OFFICIAL_CONTACT_EMAIL,
       emailMarkerExplanation:
-        'Marcador temporal activo para evitar datos ficticios. Puedes vincular tu cuenta de Gmail con Google o asignar manualmente el correo profesional definitivo.',
-      configureEmailBtn: 'Asignar correo profesional manualmente',
+        'Dirección de correo oficial de contacto profesional. Pulsa sobre el correo para abrir tu programa de correo o utiliza el formulario.',
+      configureEmailBtn: 'Cambiar correo destinatario',
       saveEmailBtn: 'Guardar correo',
       cancelEmailBtn: 'Cancelar',
       gmailIntegration: {
@@ -698,15 +775,65 @@ export const portfolioData: Record<Language, PortfolioContent> = {
         },
         validationReadyTitle: 'Datos validados correctamente',
         validationReadyPendingText:
-          'Los campos del formulario son válidos. Dado que el destinatario se encuentra como [CORREO PROFESIONAL PENDIENTE], puedes iniciar sesión con Google para enviar o guardar un borrador en Gmail, configurar el correo profesional o copiar el mensaje al portapapeles.',
+          'Los campos han sido validados correctamente. Puedes enviar el mensaje directamente mediante la API de Gmail (si has iniciado sesión con Google), guardarlo en borradores o abrir tu cliente de correo.',
         validationReadyConfiguredText:
           'Los campos han sido validados correctamente. Puedes enviar el mensaje directamente mediante la API de Gmail (si has iniciado sesión con Google), guardarlo en borradores o abrir tu cliente de correo.',
       },
+    },
+    assistant: {
+      launcherLabel: 'Asistente virtual de José María',
+      launcherSublabel: 'Entrevista por texto o voz',
+      title: 'Asistente virtual de José María',
+      subtitle: 'Consulta por texto o por voz sobre su trayectoria y competencias',
+      newConversationBtn: 'Nueva conversación',
+      closeBtn: 'Cerrar',
+      modeTextTab: 'Chat escrito',
+      modeVoiceTab: 'Conversación por voz',
+      greeting:
+        'Hola, soy el asistente virtual de José María Maroto. Estoy aquí para ayudarte a conocer su trayectoria profesional, experiencia, competencias y formación. Puedes preguntarme lo que quieras sobre su perfil.',
+      suggestedQuestionsLabel: 'Preguntas frecuentes de selección',
+      suggestedQuestions: [
+        '¿Qué responsabilidades tiene actualmente en FAC Seguridad?',
+        '¿Qué experiencia tiene en logística y control de stock?',
+        '¿Ha tenido personal a su cargo o coordinado equipos?',
+        '¿Qué formación tiene en Inteligencia Artificial?',
+        '¿Conoce SAP y la metodología 5S?',
+      ],
+      inputPlaceholder: 'Escribe tu pregunta sobre el perfil profesional...',
+      sendBtn: 'Enviar',
+      thinkingLabel: 'Consultando trayectoria...',
+      voiceControls: {
+        voiceBadgeLabel: 'Voz masculina · Español de España',
+        startMicBtn: 'Pulsar para hablar',
+        stopAndSendBtn: 'Detener y enviar pregunta',
+        cancelMicBtn: 'Cancelar',
+        stopAudioBtn: 'Detener voz',
+        replayAudioBtn: 'Escuchar respuesta',
+        autoSpeakToggle: 'Responder con voz masculina automáticamente',
+        listeningState: 'Escuchando tu pregunta... Habla con claridad',
+        transcribingState: 'Transcribiendo audio...',
+        thinkingState: 'Preparando respuesta...',
+        speakingState: 'Hablando (voz masculina)...',
+        idleVoiceHint:
+          'Pulsa el botón del micrófono para hacer tu pregunta por voz. Se solicitará permiso antes de activar el micrófono.',
+        micPermissionHint:
+          'El micrófono solo se activa cuando lo pulsas y no graba sin tu consentimiento.',
+        micDeniedError:
+          'Permiso de micrófono denegado. Activa el acceso al micrófono en tu navegador para usar la conversación por voz.',
+        micUnsupportedError:
+          'Tu navegador no permite grabar audio desde el micrófono en este entorno.',
+        emptySpeechError:
+          'No se detectó voz comprensible. Inténtalo de nuevo hablando cerca del micrófono.',
+        ttsErrorPrefix: 'No se pudo reproducir la voz masculina:',
+      },
+      privacyFooter:
+        'Asistente basado exclusivamente en el perfil profesional documentado · Sin almacenamiento de grabaciones.',
     },
     footer: {
       rights: 'José María Maroto · Portfolio Profesional',
       privacyNotice:
         'Web pública profesional · Sin publicación de datos privados sensibles (DNI, teléfono personal ni dirección particular).',
+      contactLabel: 'Contacto directo',
       backToTop: 'Volver arriba',
     },
   },
@@ -735,10 +862,11 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       ctaPrimary: 'Explore my career',
       ctaSecondaryAvailable: 'Download résumé PDF',
       ctaSecondaryPending: 'Download résumé (PDF pending)',
+      ctaAssistant: 'Interview virtual assistant',
       attachPdfLabel: 'Attach original CV PDF',
-      removePdfLabel: 'Remove PDF',
+      removePdfLabel: 'Restore original CV',
       pdfPendingNotice:
-        'Active placeholder: attach your original PDF résumé file to enable direct downloading.',
+        'The original CV is ready to download.',
       scrollIndicator: 'Explore professional background',
       photoFrameTitle: 'Personal Photograph',
       photoCaption: 'José María Maroto · Logistics & Operational Management',
@@ -753,9 +881,9 @@ export const portfolioData: Record<Language, PortfolioContent> = {
           detail: 'Continuous progression across logistics operations, warehousing, and industry',
         },
         {
-          label: 'Operational Scope',
-          value: '9 Career Stages',
-          detail: 'From distribution and CNC operations to Warehouse Manager and Silo Supervisor',
+          label: 'Current Responsibility',
+          value: 'Assistant Warehouse Manager',
+          detail: 'FAC Seguridad · Operational warehouse coordination',
         },
         {
           label: 'Management Systems',
@@ -763,9 +891,9 @@ export const portfolioData: Record<Language, PortfolioContent> = {
           detail: 'Stock control, inventory management, traceability, and order fulfillment',
         },
         {
-          label: 'Technological Growth',
-          value: '120 Hours in AI',
-          detail: 'Recent training completed at the Toledo Chamber of Commerce',
+          label: 'AI Training',
+          value: '120 hrs + Santander AI',
+          detail: 'Toledo Chamber of Commerce & Santander Open Academy',
         },
       ],
     },
@@ -809,7 +937,7 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       sectionLabel: 'Professional Experience',
       title: 'Consolidated track record in operations, warehousing, and coordination.',
       subtitle:
-        'A professional trajectory built from foundational warehouse and industrial operations up to Warehouse Manager and Silo Supervisor roles.',
+        'A professional trajectory built from foundational warehouse and industrial operations up to Assistant Warehouse Manager and Warehouse Manager roles.',
       filters: {
         all: 'All Experience (10)',
         leadership: 'Management & Coordination',
@@ -827,22 +955,22 @@ export const portfolioData: Record<Language, PortfolioContent> = {
         {
           id: 'fac-seguridad',
           company: 'FAC Seguridad',
-          role: 'Silo Supervisor (Responsable de silo)',
+          role: 'Assistant Warehouse Manager (Segundo encargado de almacén)',
           period: 'August 2019 – Present',
           category: 'leadership',
           functions: [
+            'Support in daily warehouse operational coordination.',
             'Order preparation and verification.',
             'Machine replenishment.',
             'Loading goods and pallets using forklifts.',
-            'Inventory counts.',
-            'Stock control.',
+            'Inventory counts and stock control.',
             'Operation of Ulises and RPS management systems.',
             'Support in staff training.',
           ],
           responsibilities:
-            'Day-to-day oversight of silo operations, ensuring stock accuracy, uninterrupted machine replenishment, and thorough verification of orders prior to dispatch.',
+            'Performance as Assistant Warehouse Manager (Segundo encargado de almacén): direct support in day-to-day warehouse coordination, stock accuracy, and thorough order verification prior to dispatch.',
           contributions:
-            'Consistent management of stock records through Ulises and RPS systems while supporting the practical onboarding and training of team members.',
+            'Strengthened daily team coordination and consistent stock management through Ulises and RPS systems while supporting the practical onboarding of new staff members.',
         },
         {
           id: 'grupo-uno-ctc',
@@ -1098,6 +1226,25 @@ export const portfolioData: Record<Language, PortfolioContent> = {
           tagLabel: 'Technical Certification',
         },
       ],
+      certificateHighlight: {
+        sectionLabel: 'Verified Certificate',
+        badgeLabel: 'Santander Open Academy · 5 modules',
+        title: 'Leading in the Age of AI: How Work and Organizations Are Changing',
+        institution: 'Santander Open Academy',
+        recipientLabel: 'Awarded to',
+        completionDateLabel: 'Completion date',
+        completionDateValue: 'November 20, 2026',
+        durationLabel: 'Structure',
+        durationValue: '5 modules',
+        description:
+          'Certificate focused on understanding how Artificial Intelligence is reshaping workplaces, team coordination, and organizational leadership.',
+        zoomButton: 'Enlarge certificate',
+        closeZoomButton: 'Close enlarged view',
+        attachScanButton: 'Attach certificate image',
+        removeScanButton: 'Restore institutional view',
+        scanModalNote:
+          'Detailed view of the Santander Open Academy completion certificate.',
+      },
       languagesTitle: 'Languages',
       languagesList: [
         {
@@ -1115,12 +1262,12 @@ export const portfolioData: Record<Language, PortfolioContent> = {
     resumeBanner: {
       title: 'Printable Résumé in PDF Format',
       description:
-        'You can download the PDF résumé once the original file has been attached, or link your original PDF file directly from your device to enable downloading.',
+        'Download the original PDF résumé.',
       downloadButton: 'Download résumé PDF',
-      uploadButton: 'Attach original PDF',
-      statusReady: 'Original PDF file verified and ready for download.',
+      uploadButton: '',
+      statusReady: 'Original CV ready to download.',
       statusPending:
-        'Current status: [Original PDF pending attachment]. No fictional links or fake documents are generated.',
+        'The original CV is not currently available.',
     },
     contact: {
       sectionIndex: '05',
@@ -1129,10 +1276,10 @@ export const portfolioData: Record<Language, PortfolioContent> = {
       subtitle:
         'If you are looking for an experienced professional with strong organizational skills and a commitment to keep growing, I would be delighted to hear about new opportunities.',
       emailLabel: 'Professional Email Address',
-      emailPlaceholderMarker: '[CORREO PROFESIONAL PENDIENTE]',
+      emailPlaceholderMarker: OFFICIAL_CONTACT_EMAIL,
       emailMarkerExplanation:
-        'Temporary placeholder active to avoid fictional contact data. You can connect your Gmail account with Google or manually assign your final professional email address.',
-      configureEmailBtn: 'Assign professional email manually',
+        'Official professional contact email address. Click the address to open your email application or use the contact form.',
+      configureEmailBtn: 'Change recipient email',
       saveEmailBtn: 'Save email',
       cancelEmailBtn: 'Cancel',
       gmailIntegration: {
@@ -1195,15 +1342,65 @@ export const portfolioData: Record<Language, PortfolioContent> = {
         },
         validationReadyTitle: 'Form data validated',
         validationReadyPendingText:
-          'All form fields are valid. Because the recipient address is currently set to [CORREO PROFESIONAL PENDIENTE], you can sign in with Google to send or save a draft in Gmail, configure the recipient email address, or copy the message to your clipboard.',
+          'All form fields have been validated. You can send the message directly via the Gmail API (when signed in with Google), save it as a Gmail draft, or open your email client.',
         validationReadyConfiguredText:
           'All form fields have been validated. You can send the message directly via the Gmail API (when signed in with Google), save it as a Gmail draft, or open your email client.',
       },
+    },
+    assistant: {
+      launcherLabel: 'José María Virtual Assistant',
+      launcherSublabel: 'Text or voice interview',
+      title: 'José María’s Virtual Assistant',
+      subtitle: 'Ask by text or voice about his career, skills, and training',
+      newConversationBtn: 'New conversation',
+      closeBtn: 'Close',
+      modeTextTab: 'Written chat',
+      modeVoiceTab: 'Voice conversation',
+      greeting:
+        'Hello, I am José María Maroto’s virtual assistant. I am here to help you explore his professional background, experience, competencies, and training. Feel free to ask me anything about his profile.',
+      suggestedQuestionsLabel: 'Suggested recruiter questions',
+      suggestedQuestions: [
+        'What are his current responsibilities at FAC Seguridad?',
+        'What experience does he have in logistics and stock control?',
+        'Has he supervised or coordinated teams?',
+        'What training does he have in Artificial Intelligence?',
+        'Does he know SAP and 5S methodology?',
+      ],
+      inputPlaceholder: 'Type your question about his professional profile...',
+      sendBtn: 'Send',
+      thinkingLabel: 'Reviewing background...',
+      voiceControls: {
+        voiceBadgeLabel: 'Male voice · Natural English',
+        startMicBtn: 'Tap to speak',
+        stopAndSendBtn: 'Stop & send question',
+        cancelMicBtn: 'Cancel',
+        stopAudioBtn: 'Stop voice',
+        replayAudioBtn: 'Listen to reply',
+        autoSpeakToggle: 'Automatically respond with male voice',
+        listeningState: 'Listening to your question... Speak clearly',
+        transcribingState: 'Transcribing audio...',
+        thinkingState: 'Preparing response...',
+        speakingState: 'Speaking (male voice)...',
+        idleVoiceHint:
+          'Press the microphone button to ask your question by voice. Permission will be requested before activating your microphone.',
+        micPermissionHint:
+          'The microphone activates only when pressed and never records without your consent.',
+        micDeniedError:
+          'Microphone permission was denied. Please enable microphone access in your browser settings to use voice conversation.',
+        micUnsupportedError:
+          'Your browser does not support microphone audio recording in this environment.',
+        emptySpeechError:
+          'No intelligible speech was detected. Please try again speaking clearly near the microphone.',
+        ttsErrorPrefix: 'Could not play male voice:',
+      },
+      privacyFooter:
+        'Assistant grounded strictly in documented career data · Recordings are never stored.',
     },
     footer: {
       rights: 'José María Maroto · Professional Portfolio',
       privacyNotice:
         'Public professional portfolio · Free of sensitive private data (no national ID, personal phone number, or home address published).',
+      contactLabel: 'Direct contact',
       backToTop: 'Back to top',
     },
   },
