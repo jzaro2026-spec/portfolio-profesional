@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowDown,
   ArrowUpRight,
+  Award,
   Check,
   ChevronDown,
   ChevronUp,
@@ -14,17 +15,16 @@ import {
   Download,
   FileText,
   GraduationCap,
-  Image as ImageIcon,
   Layers,
   LogOut,
   Mail,
   Menu,
+  MessageSquare,
   RefreshCw,
   Send,
   ShieldCheck,
   Sparkles,
   Trash2,
-  Upload,
   UserCheck,
   Wrench,
   X,
@@ -35,6 +35,7 @@ import type { User } from 'firebase/auth';
 import {
   Language,
   ExperienceCategory,
+  OFFICIAL_CONTACT_EMAIL,
   portfolioData,
   PORTFOLIO_IMAGES,
 } from './data/portfolioData';
@@ -51,14 +52,20 @@ import {
   GmailProfile,
   GmailMessageSummary,
 } from './services/gmailAuth';
+import VirtualAssistant from './components/VirtualAssistant';
 
 const STORAGE_KEYS = {
   LANG: 'jmm_portfolio_lang_v1',
-  PHOTO: 'jmm_portfolio_custom_photo_v1',
-  PDF_DATA: 'jmm_portfolio_original_pdf_data_v1',
-  PDF_NAME: 'jmm_portfolio_original_pdf_name_v1',
+  PHOTO: 'jmm_portfolio_custom_photo_v5',
+  PDF_DATA: 'jmm_portfolio_original_pdf_data_v4',
+  PDF_NAME: 'jmm_portfolio_original_pdf_name_v4',
   PROFESSIONAL_EMAIL: 'jmm_portfolio_prof_email_v1',
 };
+
+const ASSET_REVISION = '20261124c';
+const DEFAULT_PORTRAIT_URL = `${PORTFOLIO_IMAGES.personalPortrait}?v=${ASSET_REVISION}`;
+const DEFAULT_CV_PDF_URL = `/CV_Jose_Maria_Maroto_Lazaro.pdf?v=${ASSET_REVISION}`;
+const DEFAULT_CV_PDF_NAME = 'CV_Jose_Maria_Maroto_Lazaro.pdf';
 
 interface FormValues {
   name: string;
@@ -120,44 +127,20 @@ export default function App() {
 
   // Personal photo state: defaults to José María Maroto's attached original photograph
   const [personalPhotoUrl, setPersonalPhotoUrl] = useState<string>(() => {
-    try {
-      return (
-        localStorage.getItem(STORAGE_KEYS.PHOTO) ||
-        PORTFOLIO_IMAGES.personalPortrait
-      );
-    } catch {
-      return PORTFOLIO_IMAGES.personalPortrait;
-    }
+    return DEFAULT_PORTRAIT_URL;
   });
-  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
 
-  // Original CV PDF state (strictly enabled only when a real PDF is provided)
+  // The bundled CV is the default; an uploaded PDF can override it locally.
   const [cvPdfDataUrl, setCvPdfDataUrl] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.PDF_DATA);
-    } catch {
-      return null;
-    }
+    return DEFAULT_CV_PDF_URL;
   });
   const [cvPdfFileName, setCvPdfFileName] = useState<string>(() => {
-    try {
-      return (
-        localStorage.getItem(STORAGE_KEYS.PDF_NAME) ||
-        'CV_Jose_Maria_Maroto.pdf'
-      );
-    } catch {
-      return 'CV_Jose_Maria_Maroto.pdf';
-    }
+    return DEFAULT_CV_PDF_NAME;
   });
-  const [pdfUploadError, setPdfUploadError] = useState<string | null>(null);
 
-  // Professional email configuration (defaults to [CORREO PROFESIONAL PENDIENTE])
+  // Official professional contact email (defaults to josemarotolazaro@hotmail.com)
   const [configuredEmail, setConfiguredEmail] = useState<string>(() => {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.PROFESSIONAL_EMAIL) || '';
-    } catch {
-      return '';
-    }
+    return OFFICIAL_CONTACT_EMAIL;
   });
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [emailDraft, setEmailDraft] = useState('');
@@ -194,11 +177,34 @@ export default function App() {
   const [isExecutingGmailAction, setIsExecutingGmailAction] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] =
     useState<PendingGmailConfirmation | null>(null);
-
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
-  const pdfInputRef = useRef<HTMLInputElement | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const t = portfolioData[lang];
+
+  // Ignore media overrides created with previous asset revisions. New uploads
+  // are stored under the v2/v3 keys while the bundled photo and CV stay current.
+  useEffect(() => {
+    try {
+      localStorage.removeItem('jmm_portfolio_custom_photo_v2');
+      localStorage.removeItem('jmm_portfolio_custom_photo_v3');
+      localStorage.removeItem('jmm_portfolio_custom_photo_v4');
+      localStorage.removeItem('jmm_portfolio_original_pdf_data_v1');
+      localStorage.removeItem('jmm_portfolio_original_pdf_data_v2');
+      localStorage.removeItem('jmm_portfolio_original_pdf_data_v3');
+      localStorage.removeItem('jmm_portfolio_original_pdf_name_v1');
+      localStorage.removeItem('jmm_portfolio_original_pdf_name_v2');
+      localStorage.removeItem('jmm_portfolio_original_pdf_name_v3');
+      localStorage.removeItem(STORAGE_KEYS.PHOTO);
+      localStorage.removeItem(STORAGE_KEYS.PDF_DATA);
+      localStorage.removeItem(STORAGE_KEYS.PDF_NAME);
+    } catch {
+      // Ignore storage restrictions.
+    }
+    setPersonalPhotoUrl(DEFAULT_PORTRAIT_URL);
+    setImgFailed((prev) => ({ ...prev, portrait: false, hero: false }));
+    setCvPdfDataUrl(DEFAULT_CV_PDF_URL);
+    setCvPdfFileName(DEFAULT_CV_PDF_NAME);
+  }, []);
 
   // Initialize Firebase Auth listener on mount
   useEffect(() => {
@@ -339,92 +345,6 @@ export default function App() {
     }
   };
 
-  // Handle updating personal photograph
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhotoUploadError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setPhotoUploadError(
-        lang === 'es'
-          ? 'Selecciona un archivo de imagen válido (JPG, PNG, WEBP).'
-          : 'Please select a valid image file (JPG, PNG, WEBP).'
-      );
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : null;
-      if (result) {
-        setPersonalPhotoUrl(result);
-        setImgFailed((prev) => ({ ...prev, portrait: false }));
-        try {
-          localStorage.setItem(STORAGE_KEYS.PHOTO, result);
-        } catch {
-          // Keep in session state if quota exceeded
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  const handleRestoreOriginalPhoto = () => {
-    setPersonalPhotoUrl(PORTFOLIO_IMAGES.personalPortrait);
-    setImgFailed((prev) => ({ ...prev, portrait: false }));
-    setPhotoUploadError(null);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.PHOTO);
-    } catch {
-      // Ignore
-    }
-  };
-
-  // Handle attaching original CV PDF
-  const handlePdfUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPdfUploadError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (
-      file.type !== 'application/pdf' &&
-      !file.name.toLowerCase().endsWith('.pdf')
-    ) {
-      setPdfUploadError(
-        lang === 'es'
-          ? 'Selecciona un archivo PDF real (.pdf).'
-          : 'Please select a valid PDF file (.pdf).'
-      );
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : null;
-      if (result) {
-        setCvPdfDataUrl(result);
-        setCvPdfFileName(file.name);
-        try {
-          localStorage.setItem(STORAGE_KEYS.PDF_DATA, result);
-          localStorage.setItem(STORAGE_KEYS.PDF_NAME, file.name);
-        } catch {
-          // Keep in memory if file exceeds quota
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  const handleRemovePdf = () => {
-    setCvPdfDataUrl(null);
-    setPdfUploadError(null);
-    try {
-      localStorage.removeItem(STORAGE_KEYS.PDF_DATA);
-      localStorage.removeItem(STORAGE_KEYS.PDF_NAME);
-    } catch {
-      // Ignore
-    }
-  };
-
   const handleDownloadPdf = () => {
     if (!cvPdfDataUrl) return;
     const link = document.createElement('a');
@@ -451,7 +371,7 @@ export default function App() {
     e.preventDefault();
     const trimmed = emailDraft.trim();
     if (!trimmed) {
-      setConfiguredEmail('');
+      setConfiguredEmail(OFFICIAL_CONTACT_EMAIL);
       try {
         localStorage.removeItem(STORAGE_KEYS.PROFESSIONAL_EMAIL);
       } catch {
@@ -536,6 +456,7 @@ export default function App() {
   const getActiveRecipientEmail = () => {
     return (
       configuredEmail ||
+      OFFICIAL_CONTACT_EMAIL ||
       gmailProfile?.emailAddress ||
       gmailUser?.email ||
       ''
@@ -667,29 +588,8 @@ export default function App() {
     { id: 'contacto', label: t.nav.contact },
   ];
 
-  const isCustomPhotoLoaded =
-    personalPhotoUrl !== PORTFOLIO_IMAGES.personalPortrait;
-
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 flex flex-col">
-      {/* Hidden File Inputs for Personal Photo & Real CV PDF */}
-      <input
-        ref={photoInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handlePhotoUpload}
-        className="sr-only"
-        aria-label={t.hero.changePhotoBtn}
-      />
-      <input
-        ref={pdfInputRef}
-        type="file"
-        accept="application/pdf,.pdf"
-        onChange={handlePdfUpload}
-        className="sr-only"
-        aria-label={t.hero.attachPdfLabel}
-      />
-
       {/* MANDATORY CONFIRMATION MODAL FOR GMAIL MUTATING OPERATIONS */}
       <AnimatePresence>
         {pendingConfirmation && (
@@ -950,8 +850,8 @@ export default function App() {
           <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
             {!imgFailed.hero ? (
               <img
-                src={PORTFOLIO_IMAGES.heroLogistics}
-                alt={t.hero.captionArchitecture}
+                src={personalPhotoUrl}
+                alt={t.hero.photoCaption}
                 referrerPolicy="no-referrer"
                 onError={() =>
                   setImgFailed((prev) => ({ ...prev, hero: true }))
@@ -1023,14 +923,6 @@ export default function App() {
                           <Download className="w-4 h-4" />
                           <span>{t.hero.ctaSecondaryAvailable}</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={handleRemovePdf}
-                          title={t.hero.removePdfLabel}
-                          className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-zinc-200 bg-white text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2.5">
@@ -1043,26 +935,12 @@ export default function App() {
                           <FileText className="w-4 h-4" />
                           <span>{t.hero.ctaSecondaryPending}</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => pdfInputRef.current?.click()}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg border border-zinc-300 bg-white text-zinc-700 hover:text-zinc-950 hover:border-zinc-400 text-xs font-medium transition-colors duration-150 whitespace-nowrap shrink-0 cursor-pointer"
-                        >
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>{t.hero.attachPdfLabel}</span>
-                        </button>
                       </div>
                     )}
                   </div>
 
-                  {pdfUploadError && (
-                    <p role="alert" className="mt-2 text-xs text-red-700">
-                      {pdfUploadError}
-                    </p>
-                  )}
-
-                  {/* Scroll Indicator */}
-                  <div className="mt-8 flex items-center gap-3">
+                  {/* Scroll Indicator + Career Assistant Quick Launch */}
+                  <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
                     <a
                       href="#sobre-mi"
                       onClick={(e) => {
@@ -1074,6 +952,19 @@ export default function App() {
                       <span>{t.hero.scrollIndicator}</span>
                       <ArrowDown className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-y-0.5" />
                     </a>
+
+                    <button
+                      type="button"
+                      onClick={() => setAssistantOpen(true)}
+                      className="inline-flex items-center gap-2 text-xs font-semibold text-zinc-700 hover:text-zinc-950 underline underline-offset-4 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>
+                        {lang === 'es'
+                          ? 'Consultar al asistente profesional'
+                          : 'Ask the career assistant'}
+                      </span>
+                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -1126,34 +1017,6 @@ export default function App() {
                       {t.hero.photoCaption}
                     </p>
 
-                    <div className="flex items-center justify-center gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => photoInputRef.current?.click()}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5" />
-                        <span>{t.hero.changePhotoBtn}</span>
-                      </button>
-                      {isCustomPhotoLoaded && (
-                        <button
-                          type="button"
-                          onClick={handleRestoreOriginalPhoto}
-                          className="px-3 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                        >
-                          {t.hero.restoreOriginalPhotoBtn}
-                        </button>
-                      )}
-                    </div>
-
-                    {photoUploadError && (
-                      <p
-                        role="alert"
-                        className="text-center text-xs text-red-700"
-                      >
-                        {photoUploadError}
-                      </p>
-                    )}
                   </div>
                 </div>
 
@@ -1770,6 +1633,55 @@ export default function App() {
               </div>
             </div>
 
+            {/* Certificado Santander Open Academy */}
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.08 }}
+              className="mt-6 rounded-xl border border-zinc-200 bg-[#FAFAFA] p-6 sm:p-7"
+            >
+              <div className="flex items-center justify-between gap-3 pb-3 border-b border-zinc-200/80">
+                <span className="text-xs font-medium text-zinc-500">
+                  {t.education.certificateHighlight.sectionLabel}
+                </span>
+                <Award className="w-4 h-4 text-zinc-600 shrink-0" />
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-8">
+                  <h3 className="text-lg sm:text-xl font-bold text-zinc-950 leading-snug">
+                    {t.education.certificateHighlight.title}
+                  </h3>
+                  <p className="mt-1.5 text-xs sm:text-sm font-medium text-zinc-700">
+                    {t.education.certificateHighlight.institution}
+                  </p>
+                  <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
+                    {t.education.certificateHighlight.description}
+                  </p>
+                </div>
+
+                <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3 pt-4 lg:pt-0 lg:pl-6 border-t lg:border-t-0 lg:border-l border-zinc-200/80">
+                  <div>
+                    <p className="text-xs font-medium text-zinc-500">
+                      {t.education.certificateHighlight.completionDateLabel}
+                    </p>
+                    <p className="mt-0.5 font-mono-tabular text-sm font-semibold text-zinc-950">
+                      {t.education.certificateHighlight.completionDateValue}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-zinc-500">
+                      {t.education.certificateHighlight.durationLabel}
+                    </p>
+                    <p className="mt-0.5 font-mono-tabular text-sm font-semibold text-zinc-950">
+                      {t.education.certificateHighlight.durationValue}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
             <div className="mt-10 pt-8 border-t border-zinc-200">
               <h3 className="text-sm font-semibold text-zinc-500 mb-4">
                 {t.education.languagesTitle}
@@ -1828,14 +1740,6 @@ export default function App() {
                   <span>{t.resumeBanner.downloadButton}</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => pdfInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 px-4 py-3 rounded-lg border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-100 text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span>{t.resumeBanner.uploadButton}</span>
-                </button>
               </div>
             </div>
           </div>
@@ -1868,18 +1772,22 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* Email Address Block with Mandatory [CORREO PROFESIONAL PENDIENTE] Marker */}
+                {/* Official Contact Email Block with Functional mailto: Link */}
                 <div className="p-6 rounded-xl border border-zinc-200 bg-white">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-zinc-500">
                       {t.contact.emailLabel}
                     </span>
-                    <Mail className="w-4 h-4 text-zinc-500" />
+                    <Mail className="w-4 h-4 text-zinc-500 shrink-0" />
                   </div>
 
-                  <p className="mt-2 font-mono-tabular text-sm sm:text-base font-semibold text-zinc-950 break-all">
-                    {configuredEmail || t.contact.emailPlaceholderMarker}
-                  </p>
+                  <a
+                    href={`mailto:${configuredEmail || OFFICIAL_CONTACT_EMAIL}`}
+                    className="mt-2 inline-flex items-center gap-1.5 font-mono-tabular text-sm sm:text-base font-semibold text-zinc-950 underline decoration-zinc-300 underline-offset-4 hover:decoration-zinc-950 transition-colors break-all"
+                  >
+                    <span>{configuredEmail || OFFICIAL_CONTACT_EMAIL}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                  </a>
 
                   <p className="mt-2 text-xs text-zinc-500 leading-relaxed">
                     {t.contact.emailMarkerExplanation}
@@ -2431,10 +2339,19 @@ export default function App() {
 
       {/* QUIET EDITORIAL FOOTER */}
       <footer className="border-t border-zinc-200 bg-white py-10">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-1.5 min-w-0">
             <p className="text-sm font-bold text-zinc-950">{t.footer.rights}</p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="text-xs text-zinc-600 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>{t.footer.contactLabel}:</span>
+              <a
+                href={`mailto:${OFFICIAL_CONTACT_EMAIL}`}
+                className="font-mono-tabular font-semibold text-zinc-900 hover:text-zinc-950 underline decoration-zinc-300 underline-offset-4 hover:decoration-zinc-950 transition-colors break-all"
+              >
+                {OFFICIAL_CONTACT_EMAIL}
+              </a>
+            </p>
+            <p className="text-xs text-zinc-500">
               {t.footer.privacyNotice}
             </p>
           </div>
@@ -2451,6 +2368,12 @@ export default function App() {
           </a>
         </div>
       </footer>
+
+      <VirtualAssistant
+        lang={lang}
+        isOpen={assistantOpen}
+        onOpenChange={setAssistantOpen}
+      />
     </div>
   );
 }
